@@ -1,0 +1,23 @@
+FROM python:3.12-slim
+
+# Set environment variables to avoid Python writing .pyc files and buffering stdout/stderr
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+# Set teh work directory
+WORKDIR /agent
+
+# Install uv (dependency manager)
+RUN pip install --no-cache-dir uv
+
+# Copy project files for dependency resolution
+COPY pyproject.toml uv.lock /agent/
+
+# Install dependencies using uv (creates .venv)
+RUN uv sync --frozen --no-group develop
+
+# Copy source code
+COPY agent /agent/agent
+
+# Run using uvicorn from uv
+CMD ["/bin/sh", "-c", "uv run ./agent/server.py"]
