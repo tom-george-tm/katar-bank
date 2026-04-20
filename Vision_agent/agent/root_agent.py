@@ -92,12 +92,10 @@ _root_tools = [
     document_ocr_tool,
     get_vision_instructions_tool,
     gemini_vision_tool,
-    *get_mcp_tools(),
     *get_memory_tools(memory_service)
 ]
 
-# Choose workflow mode from env
-WORKFLOW_MODE = os.getenv("WORKFLOW_MODE", "orchestrator").lower()
+WORKFLOW_MODE = "orchestrator"
 
 # =======================================================================
 # --- 2. ORCHESTRATOR AGENT (Vision Logic) ---
@@ -116,30 +114,9 @@ if WORKFLOW_MODE in ("orchestrator", "sequential"):
         after_agent_callback=_make_after_agent_callback(memory_service) if memory_service else None,
     )
 
-# =======================================================================
-# --- 3. ROOT AGENT (Mode-selected) ---
-# =======================================================================
-if WORKFLOW_MODE == "orchestrator":
-    # Agent decides which tools/sub-agents to call dynamically
-    root_agent = orchestrator_agent
 
-elif WORKFLOW_MODE == "sequential":
-    # Fixed pipeline Step 1: Vision Orchestrator
-    root_agent = SequentialAgent(
-        name=settings.AGENT_NAME,
-        sub_agents=[orchestrator_agent],
-        description="Sequential Vision workflow.",
-    )
+root_agent = orchestrator_agent
 
-elif WORKFLOW_MODE == "parallel":
-    # Simultaneous execution if supported
-    root_agent = ParallelAgent(
-        name=settings.AGENT_NAME,
-        sub_agents=configured_remote_agents if configured_remote_agents else [orchestrator_agent],
-        description="Parallel Vision workflow.",
-    )
-else:
-    raise ValueError(f"Unknown WORKFLOW_MODE '{WORKFLOW_MODE}'.")
 
 runner_kw: dict = {
     "agent": root_agent,
