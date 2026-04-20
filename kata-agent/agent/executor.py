@@ -20,37 +20,7 @@ from agent.services.file_source_service import download_gcs_file
 
 logger = logging.getLogger(__name__)
 
-# --- Executor-specific Schemas ---
-
-class AgentInput(BaseModel):
-    flow_type: FlowType = Field(..., description="Pipeline flow to execute.")
-    processor_type: Optional[ProcessorType] = Field(
-        None,
-        description="Document AI processor used for OCR. Required for OCR flows.",
-    )
-    custom_prompt: Optional[str] = Field(
-        None,
-        description="Optional prompt sent to the vision model (vision flows only).",
-    )
-    include_word_confidence: bool = Field(
-        False,
-        description="If true, include word-level confidence in OCR output (OCR flows only).",
-    )
-    extraction_schema: Optional[dict[str, Any]] = Field(
-        None,
-        description="JSON schema for structured extraction (Gemini response_schema).",
-    )
-    include_image_in_vision: bool = Field(
-        False,
-        description=(
-            "If true, the vision step receives the original image alongside the OCR text. "
-            "Only supported for ocr_vision_pipeline."
-        ),
-    )
-    gcs_uri: Optional[str] = Field(
-        None,
-        description="GCS object URI (gs://bucket/path/file). Provide if no file is attached.",
-    )
+from agent.schemas.executor import AgentInput
 
 
 class VisionAgentExecutor(AgentExecutor):
