@@ -6,28 +6,9 @@ services:
     container_name: vision_agent_container
     ports:
       - "${PORT:-8000}:${PORT:-8000}"
+    env_file:
+      - .env
     environment:
-      - PORT=${PORT:-8000}
-      - AGENT_NAME=${AGENT_NAME}
-      - AGENT_DESCRIPTION=${AGENT_DESCRIPTION}
-      - AGENT_VERSION=${AGENT_VERSION}
-      - CLOUD_RUN_URL=${CLOUD_RUN_URL}
-      
-      - GOOGLE_CLOUD_PROJECT=${GOOGLE_CLOUD_PROJECT}
       - CREDENTIALS_PATH=/secrets/application_default_credentials.json
-      
-      - VERTEX_AI_LOCATION=${VERTEX_AI_LOCATION:-us-central1}
-      - LLM_MODEL=${LLM_MODEL:-gemini-2.0-flash}
-      - GEMINI_MAX_OUTPUT_TOKENS=${GEMINI_MAX_OUTPUT_TOKENS:-8192}
-      
-      - DOCAI_LOCATION=${DOCAI_LOCATION:-us}
-      - DOCAI_FORM_PARSER_ID=${DOCAI_FORM_PARSER_ID}
-      - DOCAI_DOCUMENT_OCR_ID=${DOCAI_DOCUMENT_OCR_ID}
-      - DOCAI_LAYOUT_PARSER_ID=${DOCAI_LAYOUT_PARSER_ID}
-      
-      - SESSION_SERVICE_BACKEND=inmemory
-      - MEMORY_SERVICE_BACKEND=inmemory
-      - ARTIFACT_SERVICE_BACKEND=inmemory
-      
     volumes:
       - ./application_default_credentials.json:/secrets/application_default_credentials.json:ro

@@ -21,7 +21,6 @@ RUN pip install --no-cache-dir --upgrade pip && \
 
 # Copy source code and environment templates
 COPY agent/ ./agent/
-COPY .env.example .env
 
 # Expose the application port
 EXPOSE 8000
