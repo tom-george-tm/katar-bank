@@ -1,0 +1,30 @@
+FROM python:3.12-slim
+
+# Prevent Python from writing .pyc files and enable unbuffered logging
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONPATH=/app
+
+WORKDIR /app
+
+# Install system dependencies for OpenCV and other binary requirements
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libgl1 \
+    libglib2.0-0 \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
+
+# Copy source code and environment templates
+COPY agent/ ./agent/
+COPY .env.example .env
+
+# Expose the application port
+EXPOSE 8000
+
+# Run the agent using the module syntax to ensure package resolution
+CMD ["python", "-m", "agent.server"]

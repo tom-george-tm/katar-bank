@@ -1,6 +1,8 @@
 import uvicorn
 import logging
-from a2a.server.apps import A2AStarletteApplication
+from starlette.applications import Starlette
+from starlette.routing import Route
+from a2a.server.routes import create_jsonrpc_routes, create_agent_card_routes
 from a2a.server.request_handlers import DefaultRequestHandler
 from a2a.server.tasks import InMemoryTaskStore
 from a2a.types import AgentCapabilities, AgentCard, AgentSkill
@@ -17,12 +19,6 @@ logger = logging.getLogger(__name__)
 # Initialize OTEL first
 setup_opentelemetry()
 
-# Create the request handler with our specific executor
-request_handler = DefaultRequestHandler(
-    agent_executor=VisionAgentExecutor(),
-    task_store=InMemoryTaskStore(),
-)
-
 # Define the Vision Agent's capability using AgentSkill
 vision_skill = AgentSkill(
     id="process_document",
@@ -33,20 +29,20 @@ vision_skill = AgentSkill(
         "Inputs can be an attached file (binary) or a GCS URI. Supports custom prompts and JSON extraction schemas."
     ),
     tags=["ocr", "vision", "document processing", "extraction", "gemini"],
-    examples=[
-        {
-            "flow_type": "ocr_vision_pipeline",
-            "processor_type": "form_parser",
-            "custom_prompt": "Extract all billing details from this invoice.",
-            "extraction_schema": {
-                "type": "object",
-                "properties": {
-                    "bill_to": {"type": "string"},
-                    "total_amount": {"type": "number"}
-                }
-            }
-        }
-    ],
+    # examples=[
+    #     {
+    #         "flow_type": "ocr_vision_pipeline",
+    #         "processor_type": "form_parser",
+    #         "custom_prompt": "Extract all billing details from this invoice.",
+    #         "extraction_schema": {
+    #             "type": "object",
+    #             "properties": {
+    #                 "bill_to": {"type": "string"},
+    #                 "total_amount": {"type": "number"}
+    #             }
+    #         }
+    #     }
+    # ],
     input_modes=["application/json", "multipart/form-data"],
     output_modes=["application/json"],
 )
@@ -63,9 +59,21 @@ agent_card = AgentCard(
     skills=[vision_skill],
 )
 
+# Create the request handler with our specific executor and agent card
+request_handler = DefaultRequestHandler(
+    agent_executor=VisionAgentExecutor(),
+    task_store=InMemoryTaskStore(),
+    agent_card=agent_card,
+)
+
+# Create routes for the A2A server
+agent_card_routes = create_agent_card_routes(agent_card)
+jsonrpc_routes = create_jsonrpc_routes(request_handler, "/rpc")
+
 # Build the Starlette application
-server = A2AStarletteApplication(agent_card=agent_card, http_handler=request_handler)
-app = server.build()
+app = Starlette(
+    routes=agent_card_routes + jsonrpc_routes
+)
 
 # Instrument FastAPI after creation
 instrument_fastapi(app)

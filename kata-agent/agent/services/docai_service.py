@@ -38,9 +38,25 @@ PROJECT_ID = settings.GOOGLE_CLOUD_PROJECT
 LOCATION = settings.DOCAI_LOCATION
 CREDS_PATH = settings.CREDENTIALS_PATH
 
-CREDENTIALS = service_account.Credentials.from_service_account_file(
-    CREDS_PATH, scopes=["https://www.googleapis.com/auth/cloud-platform"]
-)
+# Load credentials - handle both service account and authorized user types
+import json
+try:
+    with open(CREDS_PATH) as f:
+        creds_info = json.load(f)
+    
+    if creds_info.get("type") == "service_account":
+        CREDENTIALS = service_account.Credentials.from_service_account_file(
+            CREDS_PATH, scopes=["https://www.googleapis.com/auth/cloud-platform"]
+        )
+    else:
+        # For authorized_user or other types, use default credentials
+        from google.auth import default
+        CREDENTIALS, _ = default(scopes=["https://www.googleapis.com/auth/cloud-platform"])
+except Exception as e:
+    print(f"Warning: Could not load credentials from {CREDS_PATH}: {e}")
+    # Fall back to Application Default Credentials
+    from google.auth import default
+    CREDENTIALS, _ = default(scopes=["https://www.googleapis.com/auth/cloud-platform"])
 
 CLIENT_OPTIONS = ClientOptions(api_endpoint=f"{LOCATION}-documentai.googleapis.com")
 DOCUMENT_AI_CLIENT = documentai.DocumentProcessorServiceClient(

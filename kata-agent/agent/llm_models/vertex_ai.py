@@ -8,7 +8,7 @@ from google.genai.types import HttpOptions
 from google.oauth2 import service_account
 
 from agent.core.config import settings
-from utils.vertex_ai_utils import normalize_structured_vision_output
+from agent.utils.vertex_ai_utils import normalize_structured_vision_output
 
 logger = logging.getLogger(__name__)
 
@@ -19,10 +19,25 @@ MODEL_NAME = settings.LLM_MODEL
 MAX_OUTPUT_TOKENS = settings.GEMINI_MAX_OUTPUT_TOKENS
 CREDS_PATH = settings.CREDENTIALS_PATH
 
-# Service Account Credentials initialization
-CREDENTIALS = service_account.Credentials.from_service_account_file(
-    CREDS_PATH, scopes=["https://www.googleapis.com/auth/cloud-platform"]
-)
+# Service Account Credentials initialization - handle both service account and authorized user types
+import json
+try:
+    with open(CREDS_PATH) as f:
+        creds_info = json.load(f)
+    
+    if creds_info.get("type") == "service_account":
+        CREDENTIALS = service_account.Credentials.from_service_account_file(
+            CREDS_PATH, scopes=["https://www.googleapis.com/auth/cloud-platform"]
+        )
+    else:
+        # For authorized_user or other types, use default credentials
+        from google.auth import default
+        CREDENTIALS, _ = default(scopes=["https://www.googleapis.com/auth/cloud-platform"])
+except Exception as e:
+    print(f"Warning: Could not load credentials from {CREDS_PATH}: {e}")
+    # Fall back to Application Default Credentials
+    from google.auth import default
+    CREDENTIALS, _ = default(scopes=["https://www.googleapis.com/auth/cloud-platform"])
 
 # Gemini Client initialization
 CLIENT = genai.Client(
